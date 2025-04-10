@@ -64,3 +64,6 @@ uv run -m src.mcp_scan
 - [MCP Security Notification Tool Poisoning Attacks](https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks)
 - [WhatsApp MCP Exploited](https://invariantlabs.ai/blog/whatsapp-mcp-exploited)
 - [MCP Prompt Injection](https://simonwillison.net/2025/Apr/9/mcp-prompt-injection/)
+
+## Changelog
+- `0.1.4.0` initial public release
