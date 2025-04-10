@@ -1,6 +1,8 @@
 import sys
 import argparse
 from .MCPScanner import MCPScanner
+import rich
+from .version import version_info
 
 WELL_KNOWN_MCP_PATHS = [
     "~/.codeium/windsurf/mcp_config.json",  # windsurf
@@ -38,6 +40,9 @@ def main():
     parser.add_argument(
         "files", type=str, nargs="*", default=WELL_KNOWN_MCP_PATHS, help="Files to scan"
     )
+
+    rich.print("[bold blue]Invariant MCP-scan v{}[/bold blue]\n".format(version_info))
+
     args = parser.parse_args()
     scanner = MCPScanner(**vars(args))
     scanner.start()

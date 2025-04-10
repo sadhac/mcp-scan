@@ -18,7 +18,7 @@ Result = namedtuple("Result", field_names=["value", "message"], defaults=[None, 
 
 
 def format_path_line(path, status):
-    text = f"scanning [bold]{path}[/bold] [gray62]{status}[/gray62]"
+    text = f"● Scanning [bold]{path}[/bold] [gray62]{status}[/gray62]"
     return rich.text.Text.from_markup(text)
 
 
@@ -50,9 +50,8 @@ def format_tool_line(tool, verified: Result, changed: Result = Result(), type="t
     text = rich.text.Text.from_markup(text)
     return text
 
-def verify_server(
-    tools, prompts, resources, base_url
-):
+
+def verify_server(tools, prompts, resources, base_url):
     if len(tools) == 0:
         return []
     messages = [
@@ -91,11 +90,10 @@ def verify_server(
 
 
 async def check_server(server_config, timeout):
-   
     def get_client(server_config):
-        if 'url' in server_config:
-            raise NotImplementedError('SSE servers not supported yet')
-            #return sse_client(url=server_config['url'], timeout=timeout)
+        if "url" in server_config:
+            raise NotImplementedError("SSE servers not supported yet")
+            # return sse_client(url=server_config['url'], timeout=timeout)
         else:
             server_params = StdioServerParameters(**server_config)
             return stdio_client(server_params)
@@ -184,9 +182,9 @@ class MCPScanner:
     def scan(self, path, verbose=True):
         try:
             servers = scan_config_file(path)
-            status = f"found {len(servers)} servers"
+            status = f"found {len(servers)} server{'' if len(servers) == 1 else 's'}"
         except FileNotFoundError:
-            status = f"file not found"
+            status = f"file does not exist"
             return
         except json.JSONDecodeError:
             status = f"invalid json"
@@ -236,9 +234,10 @@ class MCPScanner:
         if len(servers) > 0 and verbose:
             rich.print(path_print_tree)
 
-        # cross-check references
+        # cross-references check
         # for each tool check if it referenced by tools of other servers
         cross_ref_found = False
+        cross_reference_sources = set()
         for server_name, tools in servers_with_tools.items():
             other_server_names = set(servers.keys())
             other_server_names.remove(server_name)
@@ -254,12 +253,15 @@ class MCPScanner:
                 for token in tokens:
                     if token in flagged_names:
                         cross_ref_found = True
+                        cross_reference_sources.add(token)
         if cross_ref_found and verbose:
             rich.print(
                 rich.text.Text.from_markup(
-                    ":warning: Tools in some servers explicitly mention tools in other servers, or other servers. This may lead to attacks."
-                )
+                    f"\n[bold yellow]:warning: Cross-Origin Violation: Tool descriptions of server {cross_reference_sources} explicitly mention tools of other servers, or other servers.[/bold yellow]"
+                ),
             )
+
+        print()
 
     def start(self):
         for i, path in enumerate(self.paths):
