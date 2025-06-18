@@ -235,7 +235,6 @@ class ScanPathResult(BaseModel):
             path=self.path,
             servers=[server.clone() for server in self.servers],
             error=self.error.clone() if self.error else None,
-            cross_ref_result=self.cross_ref_result.model_copy(deep=True) if self.cross_ref_result else None,
         )
         return output
 
