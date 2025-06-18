@@ -13,7 +13,14 @@ class TestFullScanFlow:
     """Test cases for end-to-end scanning workflows."""
 
     @pytest.mark.parametrize(
-        "sample_config_file", [lf("claudestyle_config_file"), lf("vscode_mcp_config_file"), lf("vscode_config_file")]
+        "sample_config_file",
+        [
+            lf("claudestyle_config_file"),
+            lf("vscode_mcp_config_file"),
+            lf("vscode_config_file"),
+            lf("streamable_http_transport_config_file"),
+            lf("sse_transport_config_file"),
+        ],
     )
     def test_basic(self, sample_config_file):
         """Test a basic complete scan workflow from CLI to results. This does not mean that the results are correct or the servers can be run."""
@@ -37,6 +44,29 @@ class TestFullScanFlow:
         except json.JSONDecodeError:
             print(result.stdout)
             pytest.fail("Failed to parse JSON output")
+
+    @pytest.mark.parametrize(
+        "sample_config_file",
+        [
+            lf("streamable_http_transport_config_file"),
+            lf("sse_transport_config_file"),
+        ],
+    )
+    def test_scan_sse_http(self, sample_config_file):
+        result = subprocess.run(
+            ["uv", "run", "-m", "src.mcp_scan.run", "scan", "--json", sample_config_file],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, f"Command failed with error: {result.stderr}"
+        output = json.loads(result.stdout)
+        assert len(output) == 1, "Output should contain exactly one entry for the config file"
+        assert {tool["name"] for tool in output[sample_config_file]["servers"][0]["signature"]["tools"]} == {
+            "is_prime",
+            "gcd",
+            "lcm",
+        }, "Tools in signature do not match expected values"
+        print(output)
 
     @pytest.mark.parametrize(
         "path, server_names",
