@@ -38,7 +38,7 @@ async def verify_scan_path_public_api(scan_path: ScanPathResult, base_url: str) 
                     raise Exception(f"Error: {response.status} - {await response.text()}")
         for server in output_path.servers:
             if server.signature is None:
-                pass
+                continue
             server.result = results.root.pop(0)
         assert len(results.root) == 0  # all results should be consumed
         return output_path
