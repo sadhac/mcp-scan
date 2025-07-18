@@ -33,7 +33,6 @@ class ScannedEntity(BaseModel):
     model_config = ConfigDict()
     hash: str
     type: str
-    verified: bool | None
     timestamp: datetime
     description: str | None = None
 
@@ -147,13 +146,17 @@ class ScanError(BaseModel):
         )
 
 
-class EntityScanResult(BaseModel):
-    model_config = ConfigDict()
-    verified: bool | None = None
-    changed: bool | None = None
-    whitelisted: bool | None = None
-    status: str | None = None
-    messages: list[str] = []
+class Issue(BaseModel):
+    code: str
+    message: str
+    reference: tuple[int, int] | None = Field(
+        default=None,
+        description="The index of the tool the issue references. None if it is global",
+    )
+    extra_data: dict[str, Any] | None = Field(
+        default=None,
+        description="Extra data to provide more context about the issue.",
+    )
 
 
 class ServerSignature(BaseModel):
@@ -167,12 +170,8 @@ class ServerSignature(BaseModel):
         return self.prompts + self.resources + self.tools
 
 
-class VerifyServerResponse(RootModel):
-    root: list[list[EntityScanResult]]
-
-
-class VerifyServerRequest(RootModel):
-    root: list[ServerSignature]
+class VerifyServerRequest(RootModel[list[ServerSignature | None]]):
+    pass
 
 
 class ServerScanResult(BaseModel):
@@ -180,7 +179,6 @@ class ServerScanResult(BaseModel):
     name: str | None = None
     server: SSEServer | StdioServer | StreamableHTTPServer
     signature: ServerSignature | None = None
-    result: list[EntityScanResult] | None = None
     error: ScanError | None = None
 
     @property
@@ -194,13 +192,6 @@ class ServerScanResult(BaseModel):
     def is_verified(self) -> bool:
         return self.result is not None
 
-    @property
-    def entities_with_result(self) -> list[tuple[Entity, EntityScanResult | None]]:
-        if self.result is not None:
-            return list(zip(self.entities, self.result, strict=False))
-        else:
-            return [(entity, None) for entity in self.entities]
-
     def clone(self) -> "ServerScanResult":
         """
         Create a copy of the ServerScanResult instance. This is not the same as `model_copy(deep=True)`, because it does not
@@ -210,7 +201,6 @@ class ServerScanResult(BaseModel):
             name=self.name,
             server=self.server.model_copy(deep=True),
             signature=self.signature.model_copy(deep=True) if self.signature else None,
-            result=[result.model_copy(deep=True) for result in self.result] if self.result else None,
             error=self.error.clone() if self.error else None,
         )
         return output
@@ -219,7 +209,8 @@ class ServerScanResult(BaseModel):
 class ScanPathResult(BaseModel):
     model_config = ConfigDict()
     path: str
-    servers: list[ServerScanResult] = []
+    servers: list[ServerScanResult] = Field(default_factory=list)
+    issues: list[Issue] = Field(default_factory=list)
     error: ScanError | None = None
 
     @property
@@ -234,6 +225,7 @@ class ScanPathResult(BaseModel):
         output = ScanPathResult(
             path=self.path,
             servers=[server.clone() for server in self.servers],
+            issues=[issue.model_copy(deep=True) for issue in self.issues],
             error=self.error.clone() if self.error else None,
         )
         return output
@@ -272,3 +264,16 @@ def entity_to_tool(
         )
     else:
         raise ValueError(f"Unknown entity type: {type(entity)}")
+
+
+class ToolReferenceWithLabel(BaseModel):
+    reference: tuple[int, int]
+    label_value: float
+
+
+class ToxicFlowExtraData(RootModel[dict[str, list[ToolReferenceWithLabel]]]):
+    pass
+
+
+class AnalysisServerResponse(BaseModel):
+    issues: list[Issue]

@@ -263,10 +263,10 @@ def main():
         metavar="NUM",
     )
     scan_parser.add_argument(
-        "--local-only",
+        "--full-toxic-flows",
         default=False,
         action="store_true",
-        help="Only run verification locally. Does not run all checks, results will be less accurate.",
+        help="Show all tools in the toxic flows, by default only the first 3 are shown.",
     )
 
     # INSPECT command
@@ -457,20 +457,6 @@ def main():
     elif args.command == "uninstall":
         asyncio.run(uninstall())
         sys.exit(0)
-    elif args.command == "whitelist":
-        if args.reset:
-            MCPScanner(**vars(args)).reset_whitelist()
-            sys.exit(0)
-        elif all(x is None for x in [args.name, args.hash]):  # no args
-            MCPScanner(**vars(args)).print_whitelist()
-            sys.exit(0)
-        elif all(x is not None for x in [args.name, args.hash]):
-            MCPScanner(**vars(args)).whitelist(args.name, args.hash, args.local_only)
-            MCPScanner(**vars(args)).print_whitelist()
-            sys.exit(0)
-        else:
-            rich.print("[bold red]Please provide a name and hash.[/bold red]")
-            sys.exit(1)
     elif args.command == "scan" or args.command is None:  # default to scan
         asyncio.run(run_scan_inspect(args=args))
         sys.exit(0)
@@ -499,11 +485,13 @@ async def run_scan_inspect(mode="scan", args=None):
             result = await scanner.scan()
         elif mode == "inspect":
             result = await scanner.inspect()
+        else:
+            raise ValueError(f"Unknown mode: {mode}, expected 'scan' or 'inspect'")
     if args.json:
         result = {r.path: r.model_dump() for r in result}
         print(json.dumps(result, indent=2))
     else:
-        print_scan_result(result)
+        print_scan_result(result, args.print_errors, args.full_toxic_flows)
 
 
 if __name__ == "__main__":
