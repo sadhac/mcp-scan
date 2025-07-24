@@ -19,3 +19,5 @@
 - `0.2.1` `mcp-scan proxy` for live MCP call scanning, [MCP guardrails](https://explorer.invariantlabs.ai/docs/mcp-scan/guardrails/); removed NPM support
 - `0.2.2` Fix bug with non-serializable exceptions. Move cross reference analysis to server-side. Now supports fuzzy similarity. Support `streamable-http` as transport.
 - `0.2.3` Bug fix. A broken MCP server would compromise the output for all the other servers within the same client.
+- `0.3.0` Add Toxic Flow analysis.
+- `0.3.1` Add cosmetics. Now defaults to `scan` also with `--` parameters.
