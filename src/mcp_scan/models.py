@@ -231,6 +231,14 @@ class ScanPathResult(BaseModel):
         return output
 
 
+class ScanUserInfo(BaseModel):
+    hostname: str | None = None
+    username: str | None = None
+    email: str | None = None
+    ip_address: str | None = None
+    anonymous_identifier: str | None = None
+
+
 def entity_to_tool(
     entity: Entity,
 ) -> Tool:

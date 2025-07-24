@@ -10,6 +10,7 @@ from invariant.__main__ import add_extra
 from rich.logging import RichHandler
 
 from mcp_scan.gateway import MCPGatewayConfig, MCPGatewayInstaller
+from mcp_scan.upload import upload
 from mcp_scan_server.server import MCPScanServer
 
 from .MCPScanner import MCPScanner
@@ -268,6 +269,27 @@ def main():
         action="store_true",
         help="Show all tools in the toxic flows, by default only the first 3 are shown.",
     )
+    scan_parser.add_argument(
+        "--control-server",
+        default=False,
+        help="Upload the scan results to the provided control server URL (default: Do not upload)",
+    )
+    scan_parser.add_argument(
+        "--push-key",
+        default=False,
+        help="When uploading the scan results to the provided control server URL, pass the push key (default: Do not upload)",
+    )
+    scan_parser.add_argument(
+        "--email",
+        default=None,
+        help="When uploading the scan results to the provided control server URL, pass the email.",
+    )
+    scan_parser.add_argument(
+        "--opt-out",
+        default=False,
+        action="store_true",
+        help="Opts out of sending unique a unique user identifier with every scan.",
+    )
 
     # INSPECT command
     inspect_parser = subparsers.add_parser(
@@ -489,6 +511,18 @@ async def run_scan_inspect(mode="scan", args=None):
             result = await scanner.inspect()
         else:
             raise ValueError(f"Unknown mode: {mode}, expected 'scan' or 'inspect'")
+
+    # upload scan result to control server if specified
+    if (
+        hasattr(args, "control_server")
+        and args.control_server
+        and hasattr(args, "push_key")
+        and args.push_key
+        and hasattr(args, "email")
+        and hasattr(args, "opt_out")
+    ):
+        await upload(result, args.control_server, args.push_key, args.email, args.opt_out)
+
     if args.json:
         result = {r.path: r.model_dump() for r in result}
         print(json.dumps(result, indent=2))
