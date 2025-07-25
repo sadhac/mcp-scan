@@ -21,3 +21,4 @@
 - `0.2.3` Bug fix. A broken MCP server would compromise the output for all the other servers within the same client.
 - `0.3.0` Add Toxic Flow analysis.
 - `0.3.1` Add cosmetics. Now defaults to `scan` also with `--` parameters.
+- `0.3.2` Add user IDs, --control-server for managed use and --opt-out to disable tracking.
